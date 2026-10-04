@@ -1,0 +1,6 @@
+flask
+ddgs
+google-genai
+pydantic
+python-dotenv
+fpdf2

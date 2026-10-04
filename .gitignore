@@ -1,0 +1,34 @@
+# Ambiente virtual
+.venv/
+venv/
+ENV/
+
+# Credenciais e dados confidenciais — inclui GEMINI_API_KEY do .env
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*credentials*.json
+*secret*.json
+secrets/
+credentials/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Flask
+instance/
+*.log
+*.sqlite
+*.db
+
+# Sistema / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
