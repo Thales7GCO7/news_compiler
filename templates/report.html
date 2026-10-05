@@ -20,9 +20,9 @@
                 </button>
             </form>
         </div>
-        
+
         <h1 class="mb-3">Relatório Analítico: {{ topicos }}</h1>
-        
+
         <div class="card mb-4 shadow-sm">
             <div class="card-header bg-dark text-white">
                 <h5 class="mb-0">Resumo Executivo</h5>
@@ -40,7 +40,25 @@
                 <div class="card mb-3 border-success">
                     <div class="card-body">
                         <p><strong>Fato:</strong> {{ conv.fato_principal }}</p>
-                        <small class="text-muted"><strong>Fontes em acordo:</strong> {{ conv.fontes | join(', ') }}</small>
+                        <small class="text-muted"><strong>Fontes em acordo:</strong>
+                        {% for f in conv.fontes %}{% if mapa_urls and mapa_urls.get(f) %}<a href="{{ mapa_urls.get(f) }}" target="_blank">{{ f }}</a>{% else %}{{ f }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</small>
+                        {% if conv.trechos %}
+                        <div class="mt-2">
+                            {% for t in conv.trechos %}
+                            <figure class="mb-2">
+                                <blockquote class="blockquote fs-6">&ldquo;{{ t.trecho }}&rdquo;</blockquote>
+                                <figcaption class="blockquote-footer mb-0">{{ t.fonte }}{% if t.indice and noticias_brutas and t.indice <= noticias_brutas|length and noticias_brutas[t.indice - 1].url %} — <a href="{{ noticias_brutas[t.indice - 1].url }}" target="_blank">ver matéria</a>{% endif %}</figcaption>
+                            </figure>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <div class="mt-2">
+                            <span class="badge bg-success">grau de convergência: sim {{ conv.similaridade_media | default(0.0) }}</span>
+                            <span class="badge bg-primary">confiança {{ conv.confianca | default(0.5) }}</span>
+                        </div>
+                        {% if conv.interpretacao %}
+                        <p class="mt-2 mb-0"><strong>Interpretação:</strong> {{ conv.interpretacao }}</p>
+                        {% endif %}
                     </div>
                 </div>
                 {% else %}
@@ -57,10 +75,36 @@
                         <h6 class="card-title text-danger">Conflito: {{ div.ponto_conflito }}</h6>
                         <hr>
                         <p class="mb-1"><strong>Visão A:</strong> {{ div.visao_a }}</p>
-                        <small class="text-muted d-block mb-3">Fontes: {{ div.fontes_a | join(', ') }}</small>
-                        
+                        <small class="text-muted d-block mb-1">Fontes: {% for f in div.fontes_a %}{% if mapa_urls and mapa_urls.get(f) %}<a href="{{ mapa_urls.get(f) }}" target="_blank">{{ f }}</a>{% else %}{{ f }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</small>
+                        {% if div.trechos_a %}
+                        <div class="mb-2">
+                            {% for t in div.trechos_a %}
+                            <figure class="mb-2">
+                                <blockquote class="blockquote fs-6">&ldquo;{{ t.trecho }}&rdquo;</blockquote>
+                                <figcaption class="blockquote-footer mb-0">{{ t.fonte }}{% if t.indice and noticias_brutas and t.indice <= noticias_brutas|length and noticias_brutas[t.indice - 1].url %} — <a href="{{ noticias_brutas[t.indice - 1].url }}" target="_blank">ver matéria</a>{% endif %}</figcaption>
+                            </figure>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
                         <p class="mb-1"><strong>Visão B:</strong> {{ div.visao_b }}</p>
-                        <small class="text-muted">Fontes: {{ div.fontes_b | join(', ') }}</small>
+                        <small class="text-muted d-block mb-1">Fontes: {% for f in div.fontes_b %}{% if mapa_urls and mapa_urls.get(f) %}<a href="{{ mapa_urls.get(f) }}" target="_blank">{{ f }}</a>{% else %}{{ f }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</small>
+                        {% if div.trechos_b %}
+                        <div class="mb-2">
+                            {% for t in div.trechos_b %}
+                            <figure class="mb-2">
+                                <blockquote class="blockquote fs-6">&ldquo;{{ t.trecho }}&rdquo;</blockquote>
+                                <figcaption class="blockquote-footer mb-0">{{ t.fonte }}{% if t.indice and noticias_brutas and t.indice <= noticias_brutas|length and noticias_brutas[t.indice - 1].url %} — <a href="{{ noticias_brutas[t.indice - 1].url }}" target="_blank">ver matéria</a>{% endif %}</figcaption>
+                            </figure>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <div class="mt-2">
+                            <span class="badge bg-danger">grau de divergência: confiança {{ div.confianca | default(0.5) }}</span>
+                        </div>
+                        {% if div.interpretacao %}
+                        <p class="mt-2 mb-0"><strong>Interpretação:</strong> {{ div.interpretacao }}</p>
+                        {% endif %}
                     </div>
                 </div>
                 {% else %}
@@ -68,6 +112,31 @@
                 {% endfor %}
             </div>
         </div>
+
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Fontes consultadas</h5>
+            </div>
+            <div class="card-body">
+                <ol class="mb-0">
+                    {% for n in noticias_brutas %}
+                    <li><strong>{{ n.fonte }}</strong> — {% if n.url %}<a href="{{ n.url }}" target="_blank">{{ n.titulo }}</a>{% else %}{{ n.titulo }}{% endif %}</li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Como os graus são calculados</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><strong>Grau de convergência (0 a 1):</strong> média do quanto os textos das matérias se parecem. O cálculo conta as palavras em comum no título e no resumo, com peso dobrado para o título e ignorando palavras muito comuns. Matérias com similaridade a partir de 0,22 entram no mesmo grupo. 0 significa textos sem nada em comum; 1, textos quase iguais.</p>
+                <p class="mb-2"><strong>Grau de divergência (0 a 1):</strong> nota para o quanto o desencontro entre as fontes é real — fontes diferentes afirmando coisas opostas — e não apenas um jeito diferente de dizer a mesma coisa.</p>
+                <p class="mb-0"><strong>Confiança (0 a 1):</strong> nota de quanto o ponto está bem sustentado pelo conjunto das matérias reunidas.</p>
+            </div>
+        </div>
+
     </div>
 </body>
 </html>

@@ -18,6 +18,16 @@
                             </div>
                             <button type="submit" class="btn btn-primary btn-lg w-100">Buscar e Analisar Notícias</button>
                         </form>
+                        <hr class="my-4">
+                        <h6 class="text-muted mb-3">Ou escolha um tema em alta:</h6>
+                        <div class="d-flex flex-wrap justify-content-center gap-2">
+                            {% for s in sugestoes %}
+                            <form action="/gerar_relatorio" method="POST" class="d-inline">
+                                <input type="hidden" name="topicos" value="{{ s }}">
+                                <button type="submit" class="btn btn-outline-primary">{{ s }}</button>
+                            </form>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
             </div>
