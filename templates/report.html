@@ -53,8 +53,7 @@
                         </div>
                         {% endif %}
                         <div class="mt-2">
-                            <span class="badge bg-success">grau de convergência: sim {{ conv.similaridade_media | default(0.0) }}</span>
-                            <span class="badge bg-primary">confiança {{ conv.confianca | default(0.5) }}</span>
+                            <span class="badge bg-success">grau de convergência: confiança {{ conv.confianca | default(0.5) }}</span>
                         </div>
                         {% if conv.interpretacao %}
                         <p class="mt-2 mb-0"><strong>Interpretação:</strong> {{ conv.interpretacao }}</p>
@@ -120,7 +119,7 @@
             <div class="card-body">
                 <ol class="mb-0">
                     {% for n in noticias_brutas %}
-                    <li><strong>{{ n.fonte }}</strong> — {% if n.url %}<a href="{{ n.url }}" target="_blank">{{ n.titulo }}</a>{% else %}{{ n.titulo }}{% endif %}</li>
+                    <li><strong>{{ n.fonte }}</strong> — {% if n.url %}<a href="{{ n.url }}" target="_blank">{{ n.titulo }}</a>{% else %}{{ n.titulo }}{% endif %}{% if n.data %} <small class="text-muted">({{ n.data }})</small>{% endif %}</li>
                     {% endfor %}
                 </ol>
             </div>
@@ -131,9 +130,8 @@
                 <h5 class="mb-0">Como os graus são calculados</h5>
             </div>
             <div class="card-body">
-                <p class="mb-2"><strong>Grau de convergência (0 a 1):</strong> média do quanto os textos das matérias se parecem. O cálculo conta as palavras em comum no título e no resumo, com peso dobrado para o título e ignorando palavras muito comuns. Matérias com similaridade a partir de 0,22 entram no mesmo grupo. 0 significa textos sem nada em comum; 1, textos quase iguais.</p>
-                <p class="mb-2"><strong>Grau de divergência (0 a 1):</strong> nota para o quanto o desencontro entre as fontes é real — fontes diferentes afirmando coisas opostas — e não apenas um jeito diferente de dizer a mesma coisa.</p>
-                <p class="mb-0"><strong>Confiança (0 a 1):</strong> nota de quanto o ponto está bem sustentado pelo conjunto das matérias reunidas.</p>
+                <p class="mb-2"><strong>Grau de convergência (0 a 1):</strong> confiança de que 2 ou mais fontes distintas concordam no mesmo fato, por sintaxe e semântica do título e do resumo (LLM com temperatura 0). Só entra o ponto com ao menos uma frase copiada literalmente das matérias — substring exata, similaridade fuzzy ≥ 0,75 ou ≥ 60% das palavras no título/resumo. Fonte e número da matéria são corrigidos para o texto onde o trecho foi encontrado.</p>
+                <p class="mb-0"><strong>Grau de divergência (0 a 1):</strong> confiança de que o conflito é real — lados com fontes distintas e sem interseção, e visões diferentes (não paráfrase). Exige ao menos um lado com frase literal confirmada; quando só um lado tem citação, a nota é multiplicada por 0,7.</p>
             </div>
         </div>
 

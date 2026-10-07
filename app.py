@@ -19,13 +19,14 @@ SUGESTOES = [
 
 
 EXPLICACAO_GRAUS = (
-    "Grau de convergência (0 a 1): média do quanto os textos das matérias se parecem. "
-    "O cálculo conta as palavras em comum no título e no resumo, com peso dobrado para o título "
-    "e ignorando palavras muito comuns. Matérias com similaridade a partir de 0,22 entram no mesmo grupo. "
-    "0 significa textos sem nada em comum; 1, textos quase iguais. "
-    "Grau de divergência (0 a 1): nota para o quanto o desencontro entre as fontes é real — "
-    "fontes diferentes afirmando coisas opostas — e não apenas um jeito diferente de dizer a mesma coisa. "
-    "Confiança (0 a 1): nota de quanto o ponto está bem sustentado pelo conjunto das matérias reunidas."
+    "Grau de convergência (0 a 1): confiança de que 2 ou mais fontes distintas concordam "
+    "no mesmo fato, por sintaxe e semântica do título e do resumo (LLM com temperatura 0). "
+    "Só entra o ponto com ao menos uma frase copiada literalmente das matérias — substring "
+    "exata, similaridade fuzzy >= 0,75 ou >= 60% das palavras no título/resumo. Fonte e número "
+    "da matéria são corrigidos para o texto onde o trecho foi encontrado. "
+    "Grau de divergência (0 a 1): confiança de que o conflito é real — lados com fontes "
+    "distintas e sem interseção, e visões diferentes (não paráfrase). Exige ao menos um lado "
+    "com frase literal confirmada; quando só um lado tem citação, a nota é multiplicada por 0,7."
 )
 
 
@@ -66,8 +67,7 @@ def gerar_pdf_relatorio(topicos, analise, noticias=None):
     for conv in convergentes:
         mc(f"Fato: {conv.get('fato_principal', '')}", style="B")
         mc(f"Fontes em acordo: {', '.join(conv.get('fontes', []))}", size=10)
-        mc(f"Grau de convergência — similaridade média: {conv.get('similaridade_media', 0.0)} | "
-           f"Confiança: {conv.get('confianca', 0.5)}", size=10)
+        mc(f"Grau de convergência — confiança: {conv.get('confianca', 0.5)}", size=10)
         for t in conv.get("trechos", []) or []:
             mc(f"\u201c{t.get('trecho', '')}\u201d — {t.get('fonte', '')}", size=10)
         if conv.get("interpretacao"):
@@ -98,7 +98,8 @@ def gerar_pdf_relatorio(topicos, analise, noticias=None):
     mc("Fontes consultadas", style="B", size=13, h=10)
     if noticias:
         for i, n in enumerate(noticias, 1):
-            mc(f"{i}. {n.get('fonte', '?')} — {n.get('titulo', '')}", size=10)
+            data = f" ({n.get('data')})" if n.get("data") else ""
+            mc(f"{i}. {n.get('fonte', '?')} — {n.get('titulo', '')}{data}", size=10)
             if n.get("url"):
                 mc(n.get("url", ""), size=9)
     else:
@@ -111,7 +112,7 @@ def gerar_pdf_relatorio(topicos, analise, noticias=None):
 
     mc("Nota metodológica", style="B", size=13, h=10)
     mc(analise.get("nota_metodologica") or
-       "Similaridade sintática TF-IDF; LLM com temperatura 0.", size=10)
+       "LLM com temperatura 0 + validação groundtruth de trechos literais.", size=10)
 
     return bytes(pdf.output())
 

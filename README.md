@@ -1,16 +1,15 @@
 # News Compiler — Monitor de Inteligência Jornalística
 
-Compilador de notícias em Flask: busca notícias sobre um tópico via DDGS, cruza as fontes com similaridade sintática + IA Gemini (temperatura 0) para extrair pontos convergentes e divergentes, exibe o relatório analítico em HTML e permite baixá-lo em PDF.
+Compilador de notícias em Flask: busca notícias sobre um tópico via DDGS, classifica com IA Gemini (temperatura 0) por sintaxe e semântica de títulos e resumos para extrair pontos convergentes e divergentes, valida cada trecho contra o groundtruth coletado, exibe o relatório analítico em HTML e permite baixá-lo em PDF.
 
 ## Funcionalidades
 
 - Busca de notícias recentes multi-fonte (`modules/fetcher.py`, via DDGS).
 - Página inicial com busca livre + botões de sugestão com os temas em alta (`SUGESTOES` no `app.py`): um clique envia o tema direto para `/gerar_relatorio`, sem digitar.
-- Similaridade sintática determinística (`modules/similarity.py`, TF-IDF + cosseno, sem dependências novas): matriz de similaridade, grupos da mesma história e grau de convergência.
-- Análise jornalística com Gemini (temperatura `0.0`, fallback entre modelos gratuitos): resumo executivo extenso e objetivo (3 a 5 parágrafos cobrindo todas as notícias), fatos convergentes (com `similaridade_media` e `confianca`) e divergentes (visões A/B com `confianca`), cada item com interpretação do motivo do acordo/conflito e frases literais das matérias (`trechos`/`trechos_a`/`trechos_b`, com fonte e nº da notícia).
-- Saída JSON validada com Pydantic (`RelatorioAnalise`), com pós-validação que remove fontes inventadas e fixa os scores em 0–1.
-- Relatório em HTML (Bootstrap 5) com nomes das fontes ligados às matérias, seção **Fontes consultadas** com links, explicação de **Como os graus são calculados** no rodapé e botão **"Baixar relatório em PDF"** (preto, com ícone de download).
-- Exportação em PDF com `fpdf2` (puro-Python, sem dependência de sistema).
+- Análise jornalística com Gemini (temperatura `0.0`, fallback entre modelos gratuitos): compara sintaxe e semântica de títulos e resumos; resumo executivo extenso e objetivo (3 a 5 parágrafos cobrindo todas as notícias), fatos convergentes e divergentes (visões A/B) com `confianca`, cada item com interpretação do motivo do acordo/conflito e frases literais das matérias (`trechos`/`trechos_a`/`trechos_b`, com fonte e nº da notícia).
+- Saída JSON validada com Pydantic (`RelatorioAnalise`), com pós-validação groundtruth de cálculos simples: remove fontes inventadas (aceita abreviação por contenção, ex. "Folha" = "Folha de S.Paulo"), confere cada trecho contra título+resumo (substring exata, fuzzy ≥ 0,75 por janela deslizante ou recall de tokens ≥ 0,6) com correção de fonte+índice pela posição onde o trecho foi achado; convergente exige fato + 2+ fontes distintas + 1+ trecho válido; divergente exige conflito/visões preenchidos e diferentes, lados com fontes disjuntas e ao menos um lado com trecho válido (lado sem citação penaliza a confiança × 0,7); scores fixados em 0–1, contadores em `correcoes` e log no terminal (`Validação groundtruth: ...`).
+- Relatório em HTML (Bootstrap 5) com nomes das fontes ligados às matérias, seção **Fontes consultadas** com links e data da notícia ao lado, explicação de **Como os graus são calculados** no rodapé (só os dois labels usados nos cartões: grau de convergência e grau de divergência) e botão **"Baixar relatório em PDF"** (preto, com ícone de download).
+- Exportação em PDF com `fpdf2` (puro-Python, sem dependência de sistema), com data da notícia nas fontes.
 - Retry automático com espera crescente em erros transitórios da API (503/UNAVAILABLE).
 
 ## Estrutura
@@ -19,8 +18,7 @@ Compilador de notícias em Flask: busca notícias sobre um tópico via DDGS, cru
 app.py                # Flask: rotas /, /gerar_relatorio (HTML), /baixar_pdf (PDF); SUGESTOES dos temas em alta
 modules/
   fetcher.py          # Busca notícias (DDGS)
-  similarity.py       # Similaridade TF-IDF + grupos (evidência pré-LLM)
-  analyzer.py         # Análise com Gemini (temp 0) + retry + validação
+  analyzer.py         # Classificação com Gemini (temp 0) + retry + validação groundtruth (docstrings com Input/Output por função)
 templates/
   index.html          # Busca por tópico + botões de sugestão
   report.html         # Relatório + botão de download do PDF
